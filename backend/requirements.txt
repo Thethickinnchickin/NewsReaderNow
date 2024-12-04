@@ -11,3 +11,4 @@ flask-limiter
 flask-mail
 pytest
 flask-cors
+flask-caching
