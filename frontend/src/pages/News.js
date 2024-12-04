@@ -10,6 +10,7 @@ const News = () => {
     useEffect(() => {
         const fetchArticles = async () => {
             try {
+                console.log(process.env.REACT_APP_API_URL)
                 const response = await axios.get(`${process.env.REACT_APP_API_URL}/news?category=technology&country=us&page_size=10`);
                 setArticles(response.data.articles);
             } catch (err) {
