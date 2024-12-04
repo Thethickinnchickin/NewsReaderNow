@@ -2,3 +2,12 @@ Flask
 requests
 python-dotenv
 transformers
+flask-cors
+gunicorn
+flask-sqlalchemy
+flask-mongoengine
+flask-session
+flask-limiter
+flask-mail
+pytest
+flask-cors
