@@ -10,7 +10,7 @@ const News = () => {
     useEffect(() => {
         const fetchArticles = async () => {
             try {
-                const response = await axios.get('/api/news?category=technology&country=us&page_size=10');
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/news?category=technology&country=us&page_size=10`);
                 setArticles(response.data.articles);
             } catch (err) {
                 setError("Failed to fetch articles.");
@@ -25,7 +25,7 @@ const News = () => {
     const loadSummary = async (index, articleUrl) => {
         setLoadingSummaryIndex(index); // Set the loading state for the current article
         try {
-            const response = await axios.get(`/api/news/summary?article_url=${encodeURIComponent(articleUrl)}`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/news/summary?article_url=${encodeURIComponent(articleUrl)}`);
             const updatedArticles = [...articles];
             updatedArticles[index].summary = response.data.summary; // Add the summary to the article
             setArticles(updatedArticles);
@@ -65,4 +65,3 @@ const News = () => {
 };
 
 export default News;
-
