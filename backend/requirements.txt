@@ -12,3 +12,4 @@ flask-mail
 pytest
 flask-cors
 flask-caching
+tensorflow
