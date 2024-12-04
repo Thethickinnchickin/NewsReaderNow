@@ -13,10 +13,10 @@ limiter = Limiter(get_remote_address)
 
 # Optimized endpoints
 
-@news_bp.route("/news", methods=["GET"])
+@news_bp.route("/news", methods=["OPTIONS", "GET"])
 @cache.cached(timeout=300, query_string=True)  # Cache responses for 5 minutes
 @limiter.limit("10 per minute")  # Limit requests to 10 per minute per user
-@cross_origin(origin='https://news-reader-now.vercel.app')
+@cross_origin(origin='https://news-reader-now.vercel.app', methods=["GET", "OPTIONS"])
 def get_news():
     """
     Fetch news articles with summaries based on category and country.
