@@ -5,72 +5,57 @@ const News = () => {
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [summaries, setSummaries] = useState({}); // Store fetched summaries
-    const [loadingSummaries, setLoadingSummaries] = useState({}); // Track loading states for summaries
+    const [loadingSummaryIndex, setLoadingSummaryIndex] = useState(null);
 
     useEffect(() => {
-        const fetchNews = async () => {
+        const fetchArticles = async () => {
             try {
-                const response = await axios.get('/api/news?category=technology');
+                const response = await axios.get('/api/news?category=technology&country=us&page_size=10');
                 setArticles(response.data.articles);
-                setLoading(false);
             } catch (err) {
-                setError(err.message);
+                setError("Failed to fetch articles.");
+            } finally {
                 setLoading(false);
             }
         };
 
-        fetchNews();
+        fetchArticles();
     }, []);
 
-    const handleFetchSummary = async (articleUrl, index) => {
-        if (summaries[index]) return; // Prevent re-fetching if summary is already loaded
-
-        // Set the loading state for the specific article
-        setLoadingSummaries((prev) => ({
-            ...prev,
-            [index]: true,
-        }));
-
+    const loadSummary = async (index, articleUrl) => {
+        setLoadingSummaryIndex(index); // Set the loading state for the current article
         try {
             const response = await axios.get(`/api/news/summary?article_url=${encodeURIComponent(articleUrl)}`);
-            setSummaries((prevSummaries) => ({
-                ...prevSummaries,
-                [index]: response.data.summary, // Store summary for the specific article
-            }));
+            const updatedArticles = [...articles];
+            updatedArticles[index].summary = response.data.summary; // Add the summary to the article
+            setArticles(updatedArticles);
         } catch (err) {
-            alert('Failed to load summary. Please try again.');
+            alert("Failed to load summary. Please try again later.");
         } finally {
-            // Remove the loading state for the specific article
-            setLoadingSummaries((prev) => ({
-                ...prev,
-                [index]: false,
-            }));
+            setLoadingSummaryIndex(null); // Reset loading state
         }
     };
 
     if (loading) return <p>Loading news...</p>;
-    if (error) return <p>Error loading news: {error}</p>;
+    if (error) return <p>{error}</p>;
 
     return (
-        <div className="news-page container">
+        <div className="news-container">
             {articles.map((article, index) => (
                 <div key={index} className="article-card">
                     <a href={article.url} target="_blank" rel="noopener noreferrer">
-                        <img src={article.urlToImage} alt={article.title} className="clickable-image" />
+                        <img src={article.urlToImage} alt={article.title} />
                     </a>
                     <h3>{article.title}</h3>
                     <p>Source: {article.source}</p>
-                    {summaries[index] ? (
-                        // Display summary if already fetched
-                        <p className="summary">{summaries[index]}</p>
-                    ) : loadingSummaries[index] ? (
-                        // Show loading indicator while summary is being fetched
-                        <p>Loading summary...</p>
+                    {article.summary ? (
+                        <p className="summary">{article.summary}</p>
                     ) : (
-                        // Show button if summary is not yet fetched
-                        <button onClick={() => handleFetchSummary(article.url, index)}>
-                            Load Summary
+                        <button
+                            onClick={() => loadSummary(index, article.url)}
+                            disabled={loadingSummaryIndex === index}
+                        >
+                            {loadingSummaryIndex === index ? "Loading..." : "Load Summary"}
                         </button>
                     )}
                 </div>
@@ -80,3 +65,4 @@ const News = () => {
 };
 
 export default News;
+
