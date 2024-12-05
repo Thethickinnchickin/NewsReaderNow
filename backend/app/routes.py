@@ -3,7 +3,7 @@ from app.utils.news_fetcher import fetch_news_with_summaries, fetch_article_cont
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 # from flask_cors import cross_origin
-from app import cache  # Now import the cache object initialized in app/__init__.py
+# from app import cache  # Now import the cache object initialized in app/__init__.py
 
 # Blueprint setup
 news_bp = Blueprint("news", __name__)
@@ -46,9 +46,9 @@ def get_article_summary():
 
     try:
         # Check for cached summary
-        cached_summary = cache.get(article_url)
-        if cached_summary:
-            return jsonify({"status": "ok", "summary": cached_summary}), 200
+        # cached_summary = cache.get(article_url)
+        # if cached_summary:
+        #     return jsonify({"status": "ok", "summary": cached_summary}), 200
 
         # Fetch article content
         article_content = fetch_article_content(article_url)
