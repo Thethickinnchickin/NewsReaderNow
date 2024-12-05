@@ -1,16 +1,15 @@
 import os
 import requests
 from dotenv import load_dotenv
-from transformers import pipeline
-import requests
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+import numpy as np
 
 # Load environment variables
 load_dotenv()
 
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 NEWS_API_URL = "https://newsapi.org/v2/top-headlines"
-# Load the summarization model
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 def fetch_news(category="general", country="us", page_size=10):
     try:
@@ -40,38 +39,51 @@ def fetch_news(category="general", country="us", page_size=10):
     except requests.exceptions.RequestException as e:
         return {"status": "error", "message": str(e)}
 
-def summarize_text(text):
+def summarize_text(text, n_clusters=3):
     """
-    Summarize a given text using Hugging Face's BART model.
+    Summarize a given text using Scikit-learn's TF-IDF and KMeans.
 
     Args:
         text (str): The text to summarize.
+        n_clusters (int): Number of sentences to include in the summary.
 
     Returns:
         str: The summarized text.
     """
     try:
-        # Define dynamic max_length and min_length
-        input_length = len(text.split())
-        max_length = min(130, input_length - 1)  # Ensure max_length is less than input length
-        min_length = max(30, max_length // 2)    # Minimum length should be a fraction of max_length
+        # Split text into sentences
+        sentences = text.split(". ")
+        if len(sentences) <= n_clusters:
+            return text  # If the text has few sentences, return it as-is
 
-        if input_length < 20:  # For very short texts, return the original text
-            return text
+        # Convert sentences to TF-IDF feature matrix
+        vectorizer = TfidfVectorizer(stop_words="english")
+        X = vectorizer.fit_transform(sentences)
 
-        summary = summarizer(
-            text,
-            max_length=max_length,
-            min_length=min_length,
-            do_sample=False
-        )
-        return summary[0]["summary_text"]
+        # Apply KMeans clustering to group sentences
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+        kmeans.fit(X)
+
+        # Find the most representative sentence in each cluster
+        representative_sentences = []
+        for cluster_id in range(n_clusters):
+            cluster_indices = np.where(kmeans.labels_ == cluster_id)[0]
+            cluster_center = kmeans.cluster_centers_[cluster_id]
+            closest_idx = min(
+                cluster_indices, 
+                key=lambda idx: np.linalg.norm(X[idx].toarray() - cluster_center)
+            )
+            representative_sentences.append(sentences[closest_idx])
+
+        # Return the selected sentences in the order they appear
+        summary = " ".join(sorted(representative_sentences, key=sentences.index))
+        return summary
     except Exception as e:
         return "Error in summarization: " + str(e)
 
 def fetch_news_with_summaries(category="general", country="us", page_size=10):
     """
-    Fetch top headlines without generating summaries.
+    Fetch top headlines and generate summaries.
 
     Args:
         category (str): News category.
@@ -79,36 +91,17 @@ def fetch_news_with_summaries(category="general", country="us", page_size=10):
         page_size (int): Number of articles.
 
     Returns:
-        dict: Simplified news articles.
+        dict: Simplified news articles with summaries.
     """
-    try:
-        params = {
-            "apiKey": NEWS_API_KEY,
-            "category": category,
-            "country": country,
-            "pageSize": page_size,
-        }
-        response = requests.get(NEWS_API_URL, params=params)
-        response.raise_for_status()
-        articles = response.json().get("articles", [])
-
-        # Simplify articles (no summaries)
-        simplified_articles = [
-            {
-                "title": article["title"],
-                "description": article["description"],
-                "url": article["url"],
-                "urlToImage": article["urlToImage"],
-                "publishedAt": article["publishedAt"],
-                "source": article["source"]["name"],
-            }
-            for article in articles
-        ]
-
-        return {"status": "ok", "articles": simplified_articles}
-    except requests.exceptions.RequestException as e:
-        return {"status": "error", "message": str(e)}
-
+    news = fetch_news(category, country, page_size)
+    if news["status"] == "ok":
+        for article in news["articles"]:
+            content = fetch_article_content(article["url"])
+            if content:
+                article["summary"] = summarize_text(content)
+            else:
+                article["summary"] = "Summary not available."
+    return news
 
 def fetch_article_content(article_url):
     """
