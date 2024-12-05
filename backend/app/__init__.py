@@ -1,11 +1,11 @@
 from flask import Flask
-# from flask_caching import Cache
-# from flask_cors import CORS
+from flask_caching import Cache
+from flask_cors import CORS
 
 # Initialize the Flask app and Cache
 app = Flask(__name__)
 
-# CORS(app, origins=["https://news-reader-now.vercel.app"], methods=["GET", "HEAD"])
+CORS(app, origins=["https://news-reader-now.vercel.app"], methods=["GET", "HEAD"])
 
 
 # app.config['CACHE_TYPE'] = 'null'  # You can choose 'simple', 'redis', 'filesystem', etc.

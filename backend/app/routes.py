@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from app.utils.news_fetcher import fetch_news_with_summaries, fetch_article_content, summarize_text
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-# from flask_cors import cross_origin
+from flask_cors import cross_origin
 # from app import cache  # Now import the cache object initialized in app/__init__.py
 
 # Blueprint setup
@@ -16,7 +16,7 @@ limiter = Limiter(get_remote_address)
 @news_bp.route("/news", methods=["OPTIONS", "GET"])
 # @cache.cached(timeout=300, query_string=True)  # Cache responses for 5 minutes
 @limiter.limit("10 per minute")  # Limit requests to 10 per minute per user
-#@cross_origin(origin='https://news-reader-now.vercel.app', methods=["GET", "OPTIONS"])
+@cross_origin(origin='https://news-reader-now.vercel.app', methods=["GET", "OPTIONS"])
 def get_news():
     """
     Fetch news articles with summaries based on category and country.
