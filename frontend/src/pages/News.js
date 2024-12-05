@@ -98,7 +98,7 @@ const News = () => {
                                 <img src={article.urlToImage} alt={article.title} />
                             </a>
                             <h3>{article.title}</h3>
-                            <p>Source: {article.source?.name || "Unknown"}</p>
+                            <p>Source: {article.source || "Unknown"}</p>
                             {article.summary ? (
                                 <p className="summary">{article.summary}</p>
                             ) : (

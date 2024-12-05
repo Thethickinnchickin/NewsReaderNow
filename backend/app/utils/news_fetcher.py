@@ -60,6 +60,7 @@ def search_news(keywords, page=1, page_size=10, language="en", sort_by="relevanc
             }
             for article in articles
         ]
+        print(simplified_articles)
 
         
         return {

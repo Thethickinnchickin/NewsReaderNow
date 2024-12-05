@@ -80,7 +80,6 @@ def search_news_endpoint():
         # Validate input
         if not keywords:
             return jsonify({"status": "error", "message": "No keywords provided."}), 400
-        print(keywords)
         # Call the search_news function
         results = search_news(keywords=keywords, page=page, page_size=page_size, language=language, sort_by=sort_by)
         return jsonify({"status": "ok", "results": results}), 200
