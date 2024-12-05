@@ -56,6 +56,7 @@ def get_article_summary():
             return jsonify({"status": "error", "message": "Article content not found"}), 404
 
         # Generate summary
+        
         summary = summarize_text(article_content) 
         return jsonify({"status": "ok", "summary": summary}), 200
     except Exception as e:

@@ -1,6 +1,9 @@
 from flask import Flask
 from flask_caching import Cache
 from flask_cors import CORS
+import nltk
+nltk.download('punkt_tab')
+
 
 # Initialize the Flask app and Cache
 app = Flask(__name__)
