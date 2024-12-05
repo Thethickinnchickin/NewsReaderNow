@@ -8,9 +8,6 @@ from nltk.tokenize import sent_tokenize
 import nltk
 from bs4 import BeautifulSoup
 nltk.download("punkt")
-from transformers import pipeline
-
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 # Load environment variables
 load_dotenv()
@@ -52,32 +49,52 @@ def clean_html(text):
     """
     return BeautifulSoup(text, "html.parser").get_text()
 
-def summarize_text(text):
+def summarize_text(text, n_clusters=3):
     """
-    Summarize a given text using Hugging Face's BART model.
+    Summarize a given text using Scikit-learn's TF-IDF and KMeans.
+
     Args:
         text (str): The text to summarize.
+        n_clusters (int): Number of sentences to include in the summary.
+
     Returns:
         str: The summarized text.
     """
     try:
-        # Define dynamic max_length and min_length
-        input_length = len(text.split())
-        max_length = min(130, input_length - 1)  # Ensure max_length is less than input length
-        min_length = max(30, max_length // 2)    # Minimum length should be a fraction of max_length
+        # Clean the text to remove HTML tags
+        text = clean_html(text)
 
-        if input_length < 20:  # For very short texts, return the original text
-            return text
+        # Tokenize text into sentences
+        sentences = sent_tokenize(text)
+        if len(sentences) <= n_clusters:
+            return text  # If too few sentences, return original text
 
-        summary = summarizer(
-            text,
-            max_length=max_length,
-            min_length=min_length,
-            do_sample=False
-        )
-        return summary[0]["summary_text"]
+        # Convert sentences to TF-IDF feature matrix
+        vectorizer = TfidfVectorizer(stop_words="english")
+        X = vectorizer.fit_transform(sentences)
+
+        # Apply KMeans clustering
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+        kmeans.fit(X)
+
+        # Identify representative sentences for each cluster
+        representative_sentences = []
+        for cluster_id in range(n_clusters):
+            cluster_indices = np.where(kmeans.labels_ == cluster_id)[0]
+            cluster_center = kmeans.cluster_centers_[cluster_id]
+            closest_idx = min(
+                cluster_indices, 
+                key=lambda idx: np.linalg.norm(X[idx].toarray() - cluster_center)
+            )
+            representative_sentences.append(sentences[closest_idx])
+
+        # Return the summary in order of original text
+        summary = " ".join(sorted(representative_sentences, key=sentences.index))
+        print(summary)
+        return summary
     except Exception as e:
-        return "Error in summarization: " + str(e)
+        print(f"Error in summarization: {e}")
+        return "Error in summarization."
     
 def fetch_news_with_summaries(category="general", country="us", page_size=10):
     """
@@ -104,8 +121,10 @@ def fetch_news_with_summaries(category="general", country="us", page_size=10):
 def fetch_article_content(article_url):
     """
     Fetch the article content from a given URL.
+
     Args:
         article_url (str): URL of the article.
+
     Returns:
         str: Content of the article or None if fetching fails.
     """
@@ -115,7 +134,8 @@ def fetch_article_content(article_url):
         response.raise_for_status()
 
         # This is a mock implementation. Replace with actual scraping/parsing logic.
-        content = response.text[:1000]  # Only take a portion to mimic content fetching
-        return content
+        content = response.text  # Only take a portion to mimic content fetching
+        summary = summarize_text(content)
+        return summary
     except requests.RequestException:
         return None
