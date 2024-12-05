@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from app.utils.news_fetcher import fetch_news_with_summaries, fetch_article_content, summarize_text
+from app.utils.news_fetcher import fetch_news, fetch_article_content, summarize_text
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_cors import cross_origin
@@ -27,7 +27,7 @@ def get_news():
     page_size = int(request.args.get("page_size", 10))
 
     try:
-        news_data = fetch_news_with_summaries(category, country, page_size)
+        news_data = fetch_news(category, country, page_size)
         return jsonify(news_data), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -56,8 +56,7 @@ def get_article_summary():
             return jsonify({"status": "error", "message": "Article content not found"}), 404
 
         # Generate summary
-        summary = summarize_text(article_content)
-        cache.set(article_url, summary, timeout=600)  # Cache summary for 10 minutes
+        summary = summarize_text(article_content) 
         return jsonify({"status": "ok", "summary": summary}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
