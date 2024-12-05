@@ -5,15 +5,72 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 import numpy as np
 from nltk.tokenize import sent_tokenize
-import nltk
 from bs4 import BeautifulSoup
-nltk.download("punkt")
 
 # Load environment variables
 load_dotenv()
 
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 NEWS_API_URL = "https://newsapi.org/v2/top-headlines"
+NEWS_API_URL_SEARCH = "https://newsapi.org/v2/everything"
+
+def search_news(keywords, page=1, page_size=10, language="en", sort_by="relevancy"):
+    """
+    Search for news articles using keywords.
+    
+    Args:
+        keywords (str): The search keywords.
+        page (int): Page number for paginated results.
+        page_size (int): Number of articles per page.
+        language (str): Language of the articles (default is English).
+        sort_by (str): Sorting criteria - relevancy, popularity, or publishedAt.
+        
+    Returns:
+        dict: A dictionary with the search results or error details.
+    """
+    try:
+        # Define query parameters
+        params = {
+            "apiKey": NEWS_API_KEY,
+            "q": keywords,  # Search keywords
+            "language": language,  # Language filter
+            "sortBy": sort_by,  # Sort criteria
+            "page": page,  # Page number
+            "pageSize": page_size,  # Results per page
+        }
+        
+        # Make the API request
+        response = requests.get(NEWS_API_URL, params=params)
+        response.raise_for_status()  # Raise an error for HTTP issues
+        
+        
+        # Parse and return the JSON response
+        articles = response.json().get("articles", [])
+       
+        
+        # Simplify article details
+        simplified_articles = [
+            {
+                "title": article["title"],
+                "description": article["description"],
+                "url": article["url"],
+                "urlToImage": article["urlToImage"],
+                "publishedAt": article["publishedAt"],
+                "source": article["source"]["name"],
+            }
+            for article in articles
+        ]
+
+        
+        return {
+            "status": "ok",
+            "totalResults": response.json().get("totalResults", 0),
+            "articles": simplified_articles,
+        }
+    except requests.exceptions.RequestException as e:
+        return {"status": "error", "message": str(e)}
+
+
 
 def fetch_news(category="general", country="us", page_size=10):
     try:
@@ -63,6 +120,7 @@ def summarize_text(text, n_clusters=3):
     try:
         # Clean the text to remove HTML tags
         text = clean_html(text)
+        print(text)
 
         # Tokenize text into sentences
         sentences = sent_tokenize(text)
@@ -90,7 +148,6 @@ def summarize_text(text, n_clusters=3):
 
         # Return the summary in order of original text
         summary = " ".join(sorted(representative_sentences, key=sentences.index))
-        print(summary)
         return summary
     except Exception as e:
         print(f"Error in summarization: {e}")
